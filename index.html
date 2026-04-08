@@ -593,10 +593,16 @@ canvas { width: 100% !important; }
       <div class="hc-sub">Monthly view</div>
       <div class="hc-arrow">→</div>
     </div>
-    <div class="home-card wide" style="--card-color:#555" onclick="goTo('settings')">
+    <div class="home-card" style="--card-color:#f97316" onclick="goTo('rulebook')">
+      <div class="hc-icon">📜</div>
+      <div class="hc-title">Rulebook</div>
+      <div class="hc-sub">Schedule & ground rules</div>
+      <div class="hc-arrow">→</div>
+    </div>
+    <div class="home-card" style="--card-color:#555" onclick="goTo('settings')">
       <div class="hc-icon">⚙️</div>
-      <div class="hc-title">Settings & Targets</div>
-      <div class="hc-sub">Edit KPIs, weekly targets, meal plan</div>
+      <div class="hc-title">Settings</div>
+      <div class="hc-sub">KPIs, targets, meal plan</div>
       <div class="hc-arrow">→</div>
     </div>
   </div>
@@ -675,6 +681,15 @@ canvas { width: 100% !important; }
   <div id="settingsContent"></div>
 </div>
 
+<!-- ══ RULEBOOK ══ -->
+<div class="screen" id="screen-rulebook">
+  <div class="topbar">
+    <div><div class="topbar-title">📜 Rulebook</div><div class="topbar-sub">Weekly Schedule & Ground Rules</div></div>
+    <button class="back-btn" onclick="goTo('home')">← Home</button>
+  </div>
+  <div id="rulebookContent"></div>
+</div>
+
 <!-- ══ BOTTOM NAV ══ -->
 <nav class="bottom-nav">
   <div class="nav-item active" id="nav-home" onclick="goTo('home')">
@@ -686,8 +701,8 @@ canvas { width: 100% !important; }
   <div class="nav-item" id="nav-weekly" onclick="goTo('weekly')">
     <div class="nav-icon">📆</div><div class="nav-label">WEEK</div>
   </div>
-  <div class="nav-item" id="nav-dashboard" onclick="goTo('dashboard')">
-    <div class="nav-icon">📊</div><div class="nav-label">DASH</div>
+  <div class="nav-item" id="nav-rulebook" onclick="goTo('rulebook')">
+    <div class="nav-icon">📜</div><div class="nav-label">RULES</div>
   </div>
   <div class="nav-item" id="nav-settings" onclick="goTo('settings')">
     <div class="nav-icon">⚙️</div><div class="nav-label">MORE</div>
@@ -697,7 +712,7 @@ canvas { width: 100% !important; }
 <!-- Firebase -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, collection, getDocs, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -768,31 +783,18 @@ onAuthStateChanged(auth, async user => {
 function showLoginScreen() {
   document.getElementById('loadingScreen').innerHTML = `
     <div class="loading-logo">LIFE <span>OS</span></div>
-    <div style="margin-top:32px;text-align:center;padding:0 32px;width:100%;max-width:320px">
+    <div style="margin-top:32px;text-align:center;padding:0 32px">
       <div style="font-size:14px;color:var(--text-secondary);margin-bottom:24px;font-family:'DM Sans',sans-serif">Your personal overachiever journal</div>
-      <input id="authEmail" type="email" placeholder="Email" style="width:100%;background:var(--bg-input);border:1px solid var(--border);border-radius:10px;color:var(--text-primary);font-family:'DM Sans',sans-serif;font-size:14px;padding:12px 14px;outline:none;margin-bottom:10px">
-      <input id="authPass" type="password" placeholder="Password" style="width:100%;background:var(--bg-input);border:1px solid var(--border);border-radius:10px;color:var(--text-primary);font-family:'DM Sans',sans-serif;font-size:14px;padding:12px 14px;outline:none;margin-bottom:16px">
-      <div id="authError" style="color:var(--accent-red);font-size:12px;margin-bottom:12px;min-height:16px"></div>
-      <button onclick="window.doSignIn()" style="width:100%;background:var(--accent-blue);border:none;color:white;padding:14px;border-radius:12px;font-family:'Syne',sans-serif;font-weight:700;font-size:15px;cursor:pointer;margin-bottom:10px">Sign In</button>
-      <button onclick="window.doRegister()" style="width:100%;background:transparent;border:1px solid var(--border);color:var(--text-secondary);padding:12px;border-radius:12px;font-family:'Syne',sans-serif;font-weight:600;font-size:14px;cursor:pointer">Create Account</button>
+      <button onclick="window.signInGoogle()" style="background:var(--accent-blue);border:none;color:white;padding:14px 32px;border-radius:12px;font-family:'Syne',sans-serif;font-weight:700;font-size:16px;cursor:pointer;display:flex;align-items:center;gap:10px;margin:0 auto">
+        <span>🔑</span> Sign in with Google
+      </button>
     </div>`;
 }
 
-window.doSignIn = async () => {
-  const email = document.getElementById('authEmail').value.trim();
-  const pass = document.getElementById('authPass').value;
-  document.getElementById('authError').textContent = '';
-  try { await signInWithEmailAndPassword(auth, email, pass); }
-  catch(e) { document.getElementById('authError').textContent = 'Wrong email or password.'; }
-};
-
-window.doRegister = async () => {
-  const email = document.getElementById('authEmail').value.trim();
-  const pass = document.getElementById('authPass').value;
-  document.getElementById('authError').textContent = '';
-  if (pass.length < 6) { document.getElementById('authError').textContent = 'Password must be 6+ characters.'; return; }
-  try { await createUserWithEmailAndPassword(auth, email, pass); }
-  catch(e) { document.getElementById('authError').textContent = e.message.includes('email-already') ? 'Email already registered. Sign in instead.' : 'Registration failed. Try again.'; }
+window.signInGoogle = async () => {
+  const provider = new GoogleAuthProvider();
+  try { await signInWithPopup(auth, provider); }
+  catch(e) { console.error(e); }
 };
 
 // ── DATA LOAD / SAVE ──
@@ -856,6 +858,7 @@ window.goTo = function(screen) {
   else if (screen === 'history') renderHistory();
   else if (screen === 'knowledge') renderKnowledge();
   else if (screen === 'calendar') renderCalendar(window.APP.calMonth);
+  else if (screen === 'rulebook') renderRulebook();
   else if (screen === 'settings') renderSettings();
 };
 
@@ -1880,6 +1883,241 @@ window.saveKPIs = function() {
   });
   window.saveSettings();
 };
+
+// ── RULEBOOK ──
+function renderRulebook() {
+  const DAYS = [
+    {
+      day: "THURSDAY", emoji: "🔨", theme: "Foundation Day",
+      color: "var(--accent-blue)", bg: "rgba(59,127,245,0.08)",
+      border: "rgba(59,127,245,0.3)",
+      tracks: [
+        { icon: "🏭", label: "Work Focus", text: "Spare Management + Instrumentation", color: "var(--work)" },
+        { icon: "💪", label: "Fitness", text: "Training session + cardio + weigh-in", color: "var(--fitness)" },
+        { icon: "⏱️", label: "Time available", text: "45 min – 1.5 hr for work goals", color: "var(--text-secondary)" },
+      ],
+      rule: "First day of the work week. Attack the two heaviest foundation projects — spare management and instrumentation. Even 30 focused minutes before reactive work takes over is progress."
+    },
+    {
+      day: "FRIDAY", emoji: "📋", theme: "Compliance Day",
+      color: "var(--accent-amber)", bg: "rgba(255,184,48,0.08)",
+      border: "rgba(255,184,48,0.3)",
+      tracks: [
+        { icon: "🏭", label: "Work Focus", text: "Isolation Safety + Compliance Calendar", color: "var(--work)" },
+        { icon: "💪", label: "Fitness", text: "Training session + cardio + weigh-in", color: "var(--fitness)" },
+        { icon: "⏱️", label: "Time available", text: "45 min – 1.5 hr for work goals", color: "var(--text-secondary)" },
+      ],
+      rule: "Deadline-driven work. Review VSAP isolation requirements, check upcoming stamping/AMC dates, close compliance gaps. Anything with a hard deadline gets attention today."
+    },
+    {
+      day: "SATURDAY", emoji: "⭐", theme: "Visibility Day",
+      color: "var(--accent-green)", bg: "rgba(0,229,160,0.08)",
+      border: "rgba(0,229,160,0.3)",
+      tracks: [
+        { icon: "🏭", label: "Work Focus", text: "Improvement Activity + Breakdown Response", color: "var(--work)" },
+        { icon: "💪", label: "Fitness", text: "Training session + cardio + weigh-in", color: "var(--fitness)" },
+        { icon: "⏱️", label: "Time available", text: "45 min – 1.5 hr for work goals", color: "var(--text-secondary)" },
+      ],
+      rule: "Package your work into something visible. Build fault reference sheets, write up improvement activities, check spares for critical equipment. This is what gets you noticed."
+    },
+    {
+      day: "SUNDAY", emoji: "🧠", theme: "Learning + Review Day",
+      color: "var(--knowledge)", bg: "rgba(168,85,247,0.08)",
+      border: "rgba(168,85,247,0.3)",
+      tracks: [
+        { icon: "🧠", label: "Plant Knowledge", text: "One equipment/system — study deeply", color: "var(--knowledge)" },
+        { icon: "📊", label: "Weekly Review", text: "Score all 5 targets (15–20 min)", color: "var(--accent-cyan)" },
+        { icon: "🎯", label: "Next Week Targets", text: "Set Software, Hardware, Work targets", color: "var(--accent-blue)" },
+        { icon: "💪", label: "Fitness", text: "Rest day or light cardio + weigh-in", color: "var(--fitness)" },
+      ],
+      rule: "No urgent plant work — use it for deep learning. Study one equipment fully. Then do weekly review: score targets, write one line on any miss, set next week's 5 targets. Sunday is the engine of the whole system."
+    },
+    {
+      day: "MONDAY", emoji: "🔁", theme: "Foundation Continues",
+      color: "var(--accent-blue)", bg: "rgba(59,127,245,0.08)",
+      border: "rgba(59,127,245,0.3)",
+      tracks: [
+        { icon: "🏭", label: "Work Focus", text: "Spare Management + Instrumentation (cont.)", color: "var(--work)" },
+        { icon: "💪", label: "Fitness", text: "Training session + cardio + weigh-in", color: "var(--fitness)" },
+        { icon: "⏱️", label: "Time available", text: "45 min – 1.5 hr for work goals", color: "var(--text-secondary)" },
+      ],
+      rule: "Mirror of Thursday. Continue where you left off on the two foundation projects. By end of Tuesday, this week's primary work target should be substantially done."
+    },
+    {
+      day: "TUESDAY", emoji: "✅", theme: "Wrap Up Day",
+      color: "var(--accent-cyan)", bg: "rgba(0,212,232,0.08)",
+      border: "rgba(0,212,232,0.3)",
+      tracks: [
+        { icon: "🏭", label: "Work Focus", text: "Close open items + log anything incomplete", color: "var(--work)" },
+        { icon: "💪", label: "Fitness", text: "Training session + cardio + weigh-in", color: "var(--fitness)" },
+        { icon: "⏱️", label: "Time available", text: "45 min – 1.5 hr for work goals", color: "var(--text-secondary)" },
+      ],
+      rule: "Last plant work day before the week off. Wrap up whatever is open. Anything not closed today carries to next week — log it honestly in Sunday's review."
+    },
+    {
+      day: "WEDNESDAY", emoji: "🚀", theme: "POWER DAY — Entrepreneurship",
+      color: "var(--accent-red)", bg: "rgba(255,77,109,0.08)",
+      border: "rgba(255,77,109,0.3)",
+      tracks: [
+        { icon: "💻", label: "Software (70%)", text: "S0 → S5 roadmap — build artifacts, not just study", color: "var(--entrepr)" },
+        { icon: "🔌", label: "Hardware (30%)", text: "H0 → H5 roadmap — simulate circuits, study AAC", color: "var(--accent-purple)" },
+        { icon: "⏱️", label: "Time available", text: "6–7 hours — protect this day", color: "var(--accent-amber)" },
+        { icon: "💪", label: "Fitness", text: "Morning workout first — then full day of building", color: "var(--fitness)" },
+      ],
+      rule: "The most important day of the week. No work project targets. Full focus on entrepreneurship. Wednesday carries the heaviest software/hardware load — the hardest, deepest work goes here. Guard it from interruptions."
+    },
+  ];
+
+  const GROUND_RULES = [
+    {
+      title: "Software Ground Rules",
+      color: "var(--entrepr)", icon: "💻",
+      rules: [
+        "Every weekly target must produce an ARTIFACT — working code, completed project, functional feature",
+        "No artifact = target not met, regardless of hours studied",
+        "~70% of entrepreneurship time goes to software",
+        "Wednesday is the primary software day — use it for the hardest work",
+        "Phase gates are real: don't advance to S1 until S0 is genuinely solid"
+      ]
+    },
+    {
+      title: "Hardware Ground Rules",
+      color: "var(--accent-purple)", icon: "🔌",
+      rules: [
+        "Weekly target = one concept understood well enough to explain OR one circuit simulated",
+        "Use Proteus for simulation before physical builds",
+        "~30% of entrepreneurship time — lower activation energy, good for lighter weekdays",
+        "Physical notebooks for circuit diagrams, screenshot folder for simulation results",
+        "H0 is 11-block curriculum — don't skip blocks"
+      ]
+    },
+    {
+      title: "Work Ground Rules",
+      color: "var(--work)", icon: "🏭",
+      rules: [
+        "One proactive deliverable per week minimum — something that didn't exist before",
+        "Two improvement activities per month — log every single one in the tracker",
+        "KPIs are outcome-based, not activity-based — always frame as plant impact",
+        "Compliance calendar reviewed monthly — nothing expires by surprise",
+        "Plant knowledge: one equipment studied per week, documented properly"
+      ]
+    },
+    {
+      title: "Missed Target Protocol",
+      color: "var(--accent-red)", icon: "⚠️",
+      rules: [
+        "Missed target carries forward to next week automatically",
+        "On Sunday review: write ONE sentence on why it was missed",
+        "If same target carries forward TWICE → it's either too big or you're avoiding it — address it",
+        "Missed targets are diagnostic data, not failure. Stay curious, not guilty",
+        "Never carry forward more than 2 targets at once — reset scope if needed"
+      ]
+    },
+    {
+      title: "Sunday Review Protocol (20 min)",
+      color: "var(--accent-cyan)", icon: "📊",
+      rules: [
+        "Score all 5 weekly targets: Software, Hardware, Work Primary, Work Knowledge, Work Improvement",
+        "Write one line on any miss",
+        "Set next week's 5 targets based on current roadmap position",
+        "Confirm Wednesday's plan — what is the big chunk of work?",
+        "Check compliance calendar — anything due in next 30 days?"
+      ]
+    },
+    {
+      title: "The Non-Negotiable Standards",
+      color: "var(--accent-green)", icon: "🎯",
+      rules: [
+        "Software: 'What did I BUILD this week?' — if no clear answer, below standard",
+        "Hardware: 'What can I explain or simulate now that I couldn't last week?'",
+        "Work: 'What exists now that didn't exist before because of me this week?'",
+        "Fitness: Morning weigh-in every day, workout on schedule, no skipped sessions without a reason",
+        "Every day logged in the journal — even a 2-minute entry on bad days"
+      ]
+    }
+  ];
+
+  let html = `<div style="padding:16px 16px 0">
+    <div style="background:rgba(255,77,109,0.08);border:1px solid rgba(255,77,109,0.2);border-radius:var(--radius);padding:14px;margin-bottom:4px">
+      <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--accent-red);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Week runs</div>
+      <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:16px">Thursday → Wednesday</div>
+      <div style="font-size:12px;color:var(--text-secondary);margin-top:4px">Wednesday = Week Off (Power Day) · Sunday = Learning + Review</div>
+    </div>
+  </div>
+
+  <div style="padding:16px 16px 8px">
+    <div style="font-family:'Space Mono',monospace;font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Daily Schedule</div>`;
+
+  DAYS.forEach(d => {
+    html += `
+    <div style="background:${d.bg};border:1px solid ${d.border};border-radius:var(--radius);margin-bottom:10px;overflow:hidden">
+      <div style="padding:14px 16px;border-bottom:1px solid ${d.border};display:flex;align-items:center;justify-content:space-between">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:22px">${d.emoji}</span>
+          <div>
+            <div style="font-family:'Space Mono',monospace;font-size:10px;color:${d.color};letter-spacing:1px">${d.day}</div>
+            <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:15px">${d.theme}</div>
+          </div>
+        </div>
+      </div>
+      <div style="padding:12px 16px">
+        ${d.tracks.map(t => `
+          <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:8px">
+            <span style="font-size:14px;margin-top:1px">${t.icon}</span>
+            <div>
+              <div style="font-size:10px;font-family:'Space Mono',monospace;color:${t.color};text-transform:uppercase;letter-spacing:0.5px">${t.label}</div>
+              <div style="font-size:13px;color:var(--text-primary)">${t.text}</div>
+            </div>
+          </div>`).join('')}
+        <div style="margin-top:10px;padding-top:10px;border-top:1px solid ${d.border}">
+          <div style="font-size:12px;color:var(--text-secondary);line-height:1.6;font-style:italic">${d.rule}</div>
+        </div>
+      </div>
+    </div>`;
+  });
+
+  html += `</div>
+  <div style="padding:0 16px 16px">
+    <div style="font-family:'Space Mono',monospace;font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;margin-top:8px">Ground Rules</div>`;
+
+  GROUND_RULES.forEach(gr => {
+    html += `
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:10px;overflow:hidden">
+      <div style="padding:12px 16px;background:var(--bg-elevated);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px">
+        <span style="font-size:16px">${gr.icon}</span>
+        <span style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:${gr.color}">${gr.title}</span>
+      </div>
+      <div style="padding:12px 16px">
+        ${gr.rules.map((r,i) => `
+          <div style="display:flex;gap:10px;margin-bottom:${i<gr.rules.length-1?'10px':'0'}">
+            <span style="color:${gr.color};font-size:12px;margin-top:2px;flex-shrink:0">▸</span>
+            <span style="font-size:13px;color:var(--text-secondary);line-height:1.5">${r}</span>
+          </div>`).join('')}
+      </div>
+    </div>`;
+  });
+
+  html += `
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:10px">
+      <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:13px;color:var(--accent-amber);margin-bottom:10px">⚡ Weekly Target Summary</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        ${[
+          {label:'Software',sub:'One artifact built',color:'var(--entrepr)'},
+          {label:'Hardware',sub:'One concept simulated',color:'var(--accent-purple)'},
+          {label:'Work Primary',sub:'One project deliverable',color:'var(--work)'},
+          {label:'Knowledge',sub:'One equipment studied',color:'var(--knowledge)'},
+          {label:'Improvement',sub:'Monthly activity progress',color:'var(--accent-green)'},
+        ].map(t => `
+          <div style="background:var(--bg-elevated);border:1px solid var(--border);border-radius:8px;padding:10px">
+            <div style="font-size:10px;font-family:'Space Mono',monospace;color:${t.color};text-transform:uppercase;letter-spacing:0.5px">${t.label}</div>
+            <div style="font-size:12px;color:var(--text-secondary);margin-top:3px">${t.sub}</div>
+          </div>`).join('')}
+      </div>
+    </div>
+  </div>`;
+
+  document.getElementById('rulebookContent').innerHTML = html;
+}
 
 window.saveMealPlan = function() {
   ['morning','afternoon','evening','night'].forEach(m => {
