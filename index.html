@@ -697,7 +697,7 @@ canvas { width: 100% !important; }
 <!-- Firebase -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, collection, getDocs, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -768,18 +768,31 @@ onAuthStateChanged(auth, async user => {
 function showLoginScreen() {
   document.getElementById('loadingScreen').innerHTML = `
     <div class="loading-logo">LIFE <span>OS</span></div>
-    <div style="margin-top:32px;text-align:center;padding:0 32px">
+    <div style="margin-top:32px;text-align:center;padding:0 32px;width:100%;max-width:320px">
       <div style="font-size:14px;color:var(--text-secondary);margin-bottom:24px;font-family:'DM Sans',sans-serif">Your personal overachiever journal</div>
-      <button onclick="window.signInGoogle()" style="background:var(--accent-blue);border:none;color:white;padding:14px 32px;border-radius:12px;font-family:'Syne',sans-serif;font-weight:700;font-size:16px;cursor:pointer;display:flex;align-items:center;gap:10px;margin:0 auto">
-        <span>🔑</span> Sign in with Google
-      </button>
+      <input id="authEmail" type="email" placeholder="Email" style="width:100%;background:var(--bg-input);border:1px solid var(--border);border-radius:10px;color:var(--text-primary);font-family:'DM Sans',sans-serif;font-size:14px;padding:12px 14px;outline:none;margin-bottom:10px">
+      <input id="authPass" type="password" placeholder="Password" style="width:100%;background:var(--bg-input);border:1px solid var(--border);border-radius:10px;color:var(--text-primary);font-family:'DM Sans',sans-serif;font-size:14px;padding:12px 14px;outline:none;margin-bottom:16px">
+      <div id="authError" style="color:var(--accent-red);font-size:12px;margin-bottom:12px;min-height:16px"></div>
+      <button onclick="window.doSignIn()" style="width:100%;background:var(--accent-blue);border:none;color:white;padding:14px;border-radius:12px;font-family:'Syne',sans-serif;font-weight:700;font-size:15px;cursor:pointer;margin-bottom:10px">Sign In</button>
+      <button onclick="window.doRegister()" style="width:100%;background:transparent;border:1px solid var(--border);color:var(--text-secondary);padding:12px;border-radius:12px;font-family:'Syne',sans-serif;font-weight:600;font-size:14px;cursor:pointer">Create Account</button>
     </div>`;
 }
 
-window.signInGoogle = async () => {
-  const provider = new GoogleAuthProvider();
-  try { await signInWithPopup(auth, provider); }
-  catch(e) { console.error(e); }
+window.doSignIn = async () => {
+  const email = document.getElementById('authEmail').value.trim();
+  const pass = document.getElementById('authPass').value;
+  document.getElementById('authError').textContent = '';
+  try { await signInWithEmailAndPassword(auth, email, pass); }
+  catch(e) { document.getElementById('authError').textContent = 'Wrong email or password.'; }
+};
+
+window.doRegister = async () => {
+  const email = document.getElementById('authEmail').value.trim();
+  const pass = document.getElementById('authPass').value;
+  document.getElementById('authError').textContent = '';
+  if (pass.length < 6) { document.getElementById('authError').textContent = 'Password must be 6+ characters.'; return; }
+  try { await createUserWithEmailAndPassword(auth, email, pass); }
+  catch(e) { document.getElementById('authError').textContent = e.message.includes('email-already') ? 'Email already registered. Sign in instead.' : 'Registration failed. Try again.'; }
 };
 
 // ── DATA LOAD / SAVE ──
